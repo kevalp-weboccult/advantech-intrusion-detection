@@ -55,3 +55,7 @@ def compute_iou(box, boxes):
     iou = intersection_area / union_area
 
     return iou
+
+def normalize_bbox(bbox, frame_width, frame_height):
+    x1, y1, x2, y2 = bbox
+    return [x1 / frame_width, y1 / frame_height, x2 / frame_width, y2 / frame_height]

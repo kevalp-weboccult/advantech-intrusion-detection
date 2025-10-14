@@ -90,7 +90,7 @@ class Detector:
     def __init__(
             self,
             name: str = "detector",
-            yolo_model: Optional["YOLO"] = None
+            model_path:str = "",
     ) -> None:
         """Initialize the Detector with configuration and model loading.
         
@@ -110,40 +110,38 @@ class Detector:
         try:
             # Core configuration
             self.name: str = name
-            self.settings_manager: ConfigManager = ConfigManager.get_instance()
+            self.config_manager: ConfigManager = ConfigManager.get_instance()
             
             # Initialize logging
             self.logger: Logger = CustomLogger(self.name)
             self.logger = self.logger.get_logger(
                 log_file=f"logs/{name}.log",
-                log_level=self.settings_manager.get("LOG_LEVEL"),
-                log_to_console=self.settings_manager.get("LOG_TO_CONSOLE"),
+                log_level=self.config_manager.get("LOG_LEVEL"),
+                log_to_console=self.config_manager.get("LOG_TO_CONSOLE"),
             )
-            
+            self.model_path = model_path
             self.logger.info(f"Initializing Detector '{self.name}'...")
-            self.use_yolo: bool = self.settings_manager.get("USE_YOLO", False)
-            self.detector_queue_size: int = self.settings_manager.get("DETECTOR_QUEUE_SIZE", 5)
+            self.use_yolo: bool = self.config_manager.get("USE_YOLO", False)
+            self.detector_queue_size: int = self.config_manager.get("DETECTOR_QUEUE_SIZE", 5)
             
             # Initialize detector and yolo_model attributes
             self.detector: Optional[ONNXDetector] = None
             self.yolo_model: Optional["YOLO"] = None
             
             # Detection parameters
-            self.iou: float = self.settings_manager.get("IOU_THRESHOLD", 0.5)
-            self.confidence: float = self.settings_manager.get("CONF_THRESHOLD", 0.5)
-            self.model_imgsz: List[int] = self.settings_manager.get("MODEL_IMGSZ", [640, 640])
-            self.is_live: bool = self.settings_manager.get("IS_LIVE", True)
+            self.iou: float = self.config_manager.get("IOU_THRESHOLD", 0.5)
+            self.confidence: float = self.config_manager.get("CONF_THRESHOLD", 0.5)
+            self.model_imgsz: List[int] = self.config_manager.get("MODEL_IMGSZ", [640, 640])
+            self.is_live: bool = self.config_manager.get("IS_LIVE", True)
             
             # Model setup
-            self.model_path: str = self.settings_manager.get(
+            self.model_path: str = self.config_manager.get(
                 "DETECTION_MODEL_PATH", 
                 "models/yolov8n.pt"
             )
-            if self.use_yolo:
-                self._initialize_yolo_model(yolo_model)
-            else:
-                self.detector = ONNXDetector()
-                self.yolo_model = None
+          
+            self.detector = ONNXDetector(model_path=model_path)
+            self.yolo_model = None
             # Queue initialization
             self.reader_queue: Optional["Queue[FrameDataType]"] = None
             self.writer_queue: "Queue[FrameDataType]" = Queue(maxsize=self.detector_queue_size)

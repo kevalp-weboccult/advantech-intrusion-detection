@@ -103,7 +103,7 @@ class Streamer:
     def _read_frame(self) -> Optional[FrameType]:
         """Attempt to read a frame from the stream."""
         ret, frame = self.stream.read()
-        frame = cv2.imread("test_2.jpg")
+        # frame = cv2.imread("test_2.jpg")
         # frame = cv2.imread("/media/wot-keval/New Volume/ai_projects/python_projects/digital_twin/7th_floor/frame_1851.jpg")
         frame = preprocess_frame(frame, self.rotation, self.is_resize, self.resize_width, self.resize_height)
         if not ret:

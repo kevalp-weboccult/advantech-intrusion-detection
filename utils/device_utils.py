@@ -8,10 +8,13 @@ This module provides utility functions for device-related operations including
 user input handling with timeouts and object serialization checking.
 """
 
+import base64
 import pickle
 import selectors
 import sys
 from typing import Any, Optional
+import machineid
+
 
 
 def get_input(prompt: str, timeout: int = 10) -> Optional[str]:
@@ -91,3 +94,26 @@ def check_if_the_object_pickleable(obj: Any) -> bool:
     except Exception:  # pylint: disable=broad-except
         # If pickling fails, return False
         return False   
+
+def check_the_system_and_get_uuid() -> Optional[str]:
+    """
+    Retrieves a unique hashed machine ID, encodes it in Base64, and returns it.
+
+    Returns:
+        Optional[str]: The Base64-encoded machine UUID if successful, otherwise None.
+    """
+    try:
+        machine_id: str = machineid.id()
+        
+        
+        # Convert the machine ID to bytes
+        id_bytes: bytes = machine_id.encode()
+
+        # Convert bytes to Base64 string
+        id_base64: str = base64.urlsafe_b64encode(id_bytes).decode()
+        
+        return id_base64
+
+    except Exception as e:
+        print(f"Error retrieving machine UUID: {e}")
+        return None

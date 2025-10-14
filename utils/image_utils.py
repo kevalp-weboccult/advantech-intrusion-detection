@@ -5,6 +5,7 @@ This module provides utility functions for image preprocessing operations
 including rotation and resizing of video frames from camera streams.
 """
 
+import base64
 import cv2
 import numpy as np
 from numpy.typing import NDArray
@@ -121,3 +122,9 @@ def create_blackout_image(image,roi_objects):
     except Exception as exec:
         print(f"Error in create_blackout_image: {exec} {traceback.format_exc()}")  
         return image,image
+
+def convert_to_base64(image): 
+    success, img_encode = cv2.imencode('.jpg', image)
+    # Encode bytes to Base64
+    encoded_string = base64.b64encode(img_encode)
+    return encoded_string.decode('utf-8')
