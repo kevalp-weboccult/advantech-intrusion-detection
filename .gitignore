@@ -13,3 +13,7 @@ __pycache__/
 *.jpeg
 *.png
 *.engine
+dist/
+build/
+*.egg-info/
+*.bin
