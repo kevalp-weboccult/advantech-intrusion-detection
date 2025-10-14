@@ -11,7 +11,7 @@ class ROIManager:
             self.camera_id = camera_id
             self.camera_name = camera_name
             self.config_manager = ConfigManager.get_instance()
-            self.name = f"ROIManager-{self.camera_id}"
+            self.name = f"ROIManager"
             self.logger = CustomLogger(self.name).get_logger(
                 log_file=f"logs/{self.name}.log",
                 log_level=self.config_manager.get("LOG_LEVEL", 10),

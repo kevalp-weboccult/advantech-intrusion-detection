@@ -12,9 +12,9 @@ from managers.APIManger import ApiManager
 from typing import Any
 from utils.device_utils import check_if_the_object_pickleable
 from managers.CameraManager import CameraManager
-from managers.RabbitmqManager import RabbitMQManager
+from managers.RabbitmqManager import RabbitmqManager
 from threading import Thread
-
+from managers.ModelManager import ModelManager
 class DeviceManager:
     def __init__(self,device_id:str,name:str="device_manager"):
         self.device_id = device_id
@@ -37,6 +37,7 @@ class DeviceManager:
         self.check_interval: timedelta = timedelta(minutes=5)
         self.device_status_check_interval: timedelta = timedelta(minutes=3)
         self.last_device_status_check_time: Optional[datetime] = None
+        self.model_manager: Optional[ModelManager] = ModelManager()
 
         self.RABBITMQ_WRITER_QUEUE_SIZE = self.config_manager.get("RABBITMQ_WRITER_QUEUE_SIZE",500)
         self.total_processes:List[mp.Process] = []
@@ -86,12 +87,12 @@ class DeviceManager:
                             "site_id": site_id,
                             "device_id": device_id,
                             "device_name": self.device_name,
-                            "current_time": datetime.now(timezone.utc),
+                            "current_time": datetime.now(timezone.utc).isoformat(),
                         }
                         device_heartbeat_message = {
                             "queue_name": self.rabbitmq_queue_name,
-                            "message_type": "device_heartbeat",
-                            "data": message
+                            "message_type": "heartbeat_device",
+                            "message": message
                         }
                         self.rabbitmq_queue.put(device_heartbeat_message)   
                         self.last_device_details_update_time = current_time
@@ -126,7 +127,7 @@ class DeviceManager:
                 # Start process
                 process: mp.Process = mp.Process(
                     target=start_camera_manager_process,
-                    args=(camera_group_id, cameras_data, self.device_id, self.camera_groups, self.rabbitmq_queue),
+                    args=(camera_group_id, cameras_data, self.device_id, self.camera_groups, self.rabbitmq_queue,self.model_manager),
                 )
                 self.processes[camera_group_id] = process
         
@@ -153,41 +154,7 @@ class DeviceManager:
                     p.join()
                 while self.running:
                     self.logger.info("DeviceManager heartbeat...")
-                    current_time = datetime.now(timezone.utc)
-                    if self.last_device_status_check_time is None or current_time - self.last_device_status_check_time >= self.device_status_check_interval:
-                        device_id = self.device_id
-                        try:
-                            # Get device data from shared dictionary (updated by device update process)
-                            shared_device_data = dict(self.shared_device_dict) if self.shared_device_dict else {}
-                            device_name = shared_device_data.get("device_name", "Unnamed Device")
-                            site_id = self.all_camera_details[0].get("site_id","") if self.all_camera_details and len(self.all_camera_details)>0 else ""
-                            
-                            message = {
-                                "site_id": site_id,
-                                "device_id": device_id,
-                                "device_name": device_name,
-                                "current_time": datetime.now(timezone.utc),
-                                "total_cameras": len(self.all_camera_details) if self.all_camera_details else 0
-                            }
-                            
-                            device_heartbeat_message = {
-                                "queue_name": self.rabbitmq_queue_name,
-                                "type": "device_heartbeat",
-                                "data": message
-                            }
-                            self.last_device_status_check_time = current_time
-                            
-                            if not self.rabbitmq_queue.full():
-                                self.rabbitmq_queue.put(device_heartbeat_message)
-                                self.logger.info(f"Device heartbeat sent for device {device_id}")
-                            else:
-                                self.logger.warning("RabbitMQ queue is full. Device heartbeat not sent.")
-                                
-                        except Exception as exec:
-                            self.logger.error(f"Error preparing device heartbeat message: {str(exec)}")
-                            self.logger.error(traceback.format_exc())
-                    
-                    time.sleep(10)  
+                    time.sleep(10)
 
             
             except Exception as exec:
@@ -217,9 +184,9 @@ class DeviceManager:
         self.logger.info("DeviceManager stopped.")
 
 
-def start_camera_manager_process(camera_group_id: str, cameras: List[dict], device_id: str, camera_groups: Any,rabbitmq_queue) -> None:
+def start_camera_manager_process(camera_group_id: str, cameras: List[dict], device_id: str, camera_groups: Any,rabbitmq_queue,model_manager:ModelManager) -> None:
     try:
-        camera_manager = CameraManager(camera_group_id, cameras, device_id, camera_groups,rabbitmq_queue)
+        camera_manager = CameraManager(camera_group_id, cameras, device_id, camera_groups,rabbitmq_queue,model_manager)
         camera_manager.start()
         while camera_manager.running:
             time.sleep(1)
@@ -235,7 +202,7 @@ def start_camera_manager_process(camera_group_id: str, cameras: List[dict], devi
 def start_rabbitmq_manager_process(rabbitmq_queue,shared_camera_dict,shared_device_dict,logger):
         try:
             print(f"Starting RabbitMQManager for group", flush=True)
-            rabbitmq_manager = RabbitMQManager(rabbitmq_queue,shared_camera_dict,shared_device_dict)
+            rabbitmq_manager = RabbitmqManager(rabbitmq_queue,shared_camera_dict,shared_device_dict)
             rabbitmq_manager.start()
             print(f"RabbitMQManager started", flush=True)
             logger.info(f"RabbitMQManager started")
