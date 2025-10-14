@@ -136,7 +136,7 @@ class ModelDownloader:
     def __init__(self, logger: Any, encryption_manager: EncryptionManager, device_data: Dict[str, Any]) -> None:
         self.logger = logger
         self.config_manager = ConfigManager.get_instance()    
-        self.model_folder = self.config_manager.get("MODEL_FOLDERS","MODELS")
+        self.model_folder = self.config_manager.get("ENCRYPTED_MODELS_PATH","MODELS")
         self.detection_model_name = self.config_manager.get("DETECTION_MODEL_NAME","best4.onnx")
         self.encryption_manager = encryption_manager
         self.device_data = device_data
