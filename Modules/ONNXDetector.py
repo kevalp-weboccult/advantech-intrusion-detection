@@ -12,7 +12,7 @@ from utils.bbox_utils import multiclass_nms
 class ONNXDetector:
     
 
-    def __init__(self):
+    def __init__(self,model_path):
         """
         Initialize an instance of the YOLOv8 class.
 
@@ -29,7 +29,7 @@ class ONNXDetector:
             log_level=self.config_manager.get("LOG_LEVEL"),
             log_to_console=self.config_manager.get("LOG_TO_CONSOLE"),
         )
-        self.model_path:str = os.path.join(self.config_manager.get("Model_folder"),self.config_manager.get("DETECTION_MODEL_PATH","yolov8s.onnx"))
+        self.model_path:str = model_path #os.path.join(self.config_manager.get("Model_folder"),self.config_manager.get("DETECTION_MODEL_PATH","yolov8s.onnx"))
         self.providers:List[str] = self.config_manager.get("ONNX_PROVIDER",["CUDAExecutionProvider","CPUExecutionProvider"])
         
         try:
