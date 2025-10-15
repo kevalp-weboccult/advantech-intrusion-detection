@@ -16,7 +16,8 @@ import multiprocessing as mp
 from managers.ConfigManager import ConfigManager
 from managers.DeviceManager import DeviceManager
 from Modules.CustomLogger import CustomLogger
-
+from dotenv import load_dotenv
+load_dotenv(override=True)
 # Suppress OpenCV logging
 os.environ['OPENCV_LOG_LEVEL'] = 'OFF'
 os.environ['OPENCV_FFMPEG_LOGLEVEL'] = "-8"
@@ -47,7 +48,7 @@ class MainManager:
             log_to_console=self.config.defaults.get("LOG_TO_CONSOLE", True)
         )
         self.logger.info("MainManager initialized with configuration:")
-
+        self.token = os.environ.get("TOKEN", "")
         mp.set_start_method('spawn', force=True)
         # mp.freeze_support()
         self.faulthandler_log_file: str = "faulthandler.log"
@@ -60,10 +61,11 @@ class MainManager:
         self.config_file: str = "device_data.json"
 
         # Initialize device ID
-        device_id: Optional[str] = self._get_or_create_device_id()
-        self.device_id: str = device_id or ""
+        # device_id: Optional[str] = self._get_or_create_device_id()
+        # self.device_id: str = device_id or ""
+        
 
-        self.device_manager: DeviceManager = DeviceManager(self.device_id)
+        self.device_manager: DeviceManager = DeviceManager(self.token)
 
     def _get_or_create_device_id(self) -> Optional[str]:
         """
