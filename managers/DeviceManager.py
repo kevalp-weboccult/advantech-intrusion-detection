@@ -16,8 +16,8 @@ from managers.RabbitmqManager import RabbitmqManager
 from threading import Thread
 from managers.ModelManager import ModelManager
 class DeviceManager:
-    def __init__(self,device_id:str,name:str="device_manager"):
-        self.device_id = device_id
+    def __init__(self,token:str,name:str="device_manager"):
+        self.token = token
         self.name = name
         self.config_manager = ConfigManager.get_instance()
         
@@ -26,9 +26,10 @@ class DeviceManager:
             log_level=self.config_manager.get("LOG_LEVEL", 10),
             log_to_console=self.config_manager.get("LOG_TO_CONSOLE", True)
         )
-        self.logger.info(f"DeviceManager initialized for device ID: {self.device_id}")
-        self.api_manager = ApiManager(self.device_id)
-        self.all_camera_details: Optional[Dict[str,Any]] = self.api_manager.get_all_camera_details(self.device_id)
+        # self.logger.info(f"DeviceManager initialized for device ID: {self.device_id}")
+        self.api_manager = ApiManager(self.token)
+        self.all_camera_details: Optional[Dict[str,Any]] = self.api_manager.get_all_camera_details()
+        self.device_id = self.api_manager.device_id if self.api_manager.device_id else "unknown_device"
         self.device_data:Optional[Dict[str,Any]] = self.api_manager._get_device_data()
 
 

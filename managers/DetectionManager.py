@@ -133,11 +133,11 @@ class DetectionManager:
                 e_time = time.time()
                 # self.logger.info(f"Time taken for roi manager {e_time-s_time} {len(detections)=} ")
                 #Further processing can be added here
-                merged_frame = cv2.hconcat([inference_frame, frame]) if inference_frame is not None else frame
-                cv2.namedWindow("DetectionManager Frame", cv2.WINDOW_NORMAL)
-                cv2.imshow("DetectionManager Frame", merged_frame)
+                # merged_frame = cv2.hconcat([inference_frame, frame]) if inference_frame is not None else frame
+                # cv2.namedWindow("DetectionManager Frame", cv2.WINDOW_NORMAL)
+                # cv2.imshow("DetectionManager Frame", merged_frame)
                 
-                cv2.waitKey(0)
+                # cv2.waitKey(0)
                 
             except Exception as e:
                 self.logger.error(f"Error in DetectionManager loop: {e}")
