@@ -13,6 +13,44 @@ import cv2
 from utils.image_utils import convert_to_base64
 from utils.bbox_utils import normalize_bbox
 
+
+def add_tint_with_exclusion_polygon(frame, polygon_points, inner_bboxes=None, color=(0, 0, 255), alpha=0.25):
+    """
+    Adds a tint strictly inside a polygon region, excluding inner bounding boxes.
+    This is the effect you are asking for now.
+    """
+    if inner_bboxes is None:
+        inner_bboxes = []
+    h, w = frame.shape[:2]
+
+    # --- 1️⃣ Create a mask of the polygon area ---
+    # We start with a black image and draw the polygon in white.
+    roi_mask = np.zeros((h, w), dtype=np.uint8)
+    cv2.fillPoly(roi_mask, [polygon_points], 255)
+
+    # --- 2️⃣ "Cut out" the inner bounding boxes from the mask ---
+    # We draw black rectangles on the white polygon mask where the phones are.
+    for box in inner_bboxes:
+        if len(box) < 4:
+            continue
+        x1, y1, x2, y2 = map(int, box)
+        # This erases the area from the mask, so it won't be tinted.
+        cv2.rectangle(roi_mask, (x1, y1), (x2, y2), 0, -1) 
+
+    # --- 3️⃣ Create a color overlay ---
+    overlay = frame.copy()
+    tint_layer = np.full_like(frame, color, dtype=np.uint8)
+    cv2.addWeighted(tint_layer, alpha, overlay, 1 - alpha, 0, overlay)
+
+    # --- 4️⃣ Apply the final mask ---
+    # The tint is applied only where the mask is still white.
+    mask_3ch = cv2.merge([roi_mask] * 3)
+    output = frame.copy()
+    output[mask_3ch == 255] = overlay[mask_3ch == 255]
+
+    return output
+
+
 class DetectionManager:
     def __init__(self,all_roi_objects:List[Any],camera_details:Optional[Dict[str,Any]]=None,rabbitmq_queue:Optional[Queue]=None):
         self.config_manager = ConfigManager.get_instance()
@@ -62,10 +100,20 @@ class DetectionManager:
                 # cv2.imshow("DetectionManager Inference Frame", inference_frame)
                 # cv2.waitKey(1)
                 
+        
+
+
+
                 for roi_object in self.roi_objects:
                     detection_norm_list = []
                     roi_object.current_insider_bboxes = []
-                    cv2.polylines(frame, [np.array(roi_object.denorm_points).astype(np.int32)], isClosed=True, color=(0, 255, 0), thickness=2)
+                    roi_type = "normal" if roi_object.roi_type == "normal" else "critical"
+                    if roi_type =="normal":
+                        cv2.polylines(frame, [np.array(roi_object.denorm_points).astype(np.int32)], isClosed=True, color=(105, 105, 105), thickness=2)
+                    
+                    else:
+                        cv2.polylines(frame, [np.array(roi_object.denorm_points).astype(np.int32)], isClosed=True, color=(0, 0, 255), thickness=2)
+
                     for det in detections:
                         bbox = det.get("bbox")
                         # self.logger.info(f"Processing detection bbox: {bbox}")
@@ -76,18 +124,22 @@ class DetectionManager:
                         center_x = (x1 + x2) / 2
                         center_y = (y1 + y2) / 2
                         point = Point(center_x, center_y)
+                        # frame = cv2.fillPoly(frame, [np.array(roi_object.denorm_points).astype(np.int32)], (0, 255, 0))
+                        frame = add_tint_with_exclusion_polygon(frame, np.array(roi_object.denorm_points).astype(np.int32),inner_bboxes=None, color=(0, 255, 0), alpha=0.1)
                         cv2.circle(frame, (int(center_x), int(center_y)), 5, (255, 0, 0), -1)
                         if roi_object.denorm_poly_points.is_valid and roi_object.denorm_poly_points.contains(point):
                             norm_bbox = normalize_bbox(bbox, w, h)
                             roi_object.current_insider_bboxes.append(bbox)
                             if self.config_manager.get("DEBUG_MODE", False):
+                                frame = add_tint_with_exclusion_polygon(frame, np.array(roi_object.denorm_points).astype(np.int32), inner_bboxes=roi_object.current_insider_bboxes, color=(0, 0, 255), alpha=0.1)
                                 # self.logger.info(f"Intrusion detected in ROI '{roi_object.name}' for bbox: {bbox}")
-                                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
+                                # cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
                                 
                         else:
                             if self.config_manager.get("DEBUG_MODE", False):
+                                frame = add_tint_with_exclusion_polygon(frame, np.array(roi_object.denorm_points).astype(np.int32), inner_bboxes=roi_object.current_insider_bboxes, color=(0, 255, 0), alpha=0.1)
                                 # self.logger.info(f"No intrusion in ROI '{roi_object.name}' for bbox: {bbox}")
-                                cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
+                                # cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
                     self.logger.info(f"ROI '{roi_object.name}' detected {len(roi_object.current_insider_bboxes)} insider bboxes.")
                     if len(roi_object.current_insider_bboxes) > 0:
                         # roi_object.last_alert_sent_time = datetime.now(timezone.utc)  
@@ -131,13 +183,14 @@ class DetectionManager:
 
                         
                 e_time = time.time()
+                # cv2.imwrite(f"test.jpg", frame)
                 # self.logger.info(f"Time taken for roi manager {e_time-s_time} {len(detections)=} ")
                 #Further processing can be added here
-                # merged_frame = cv2.hconcat([inference_frame, frame]) if inference_frame is not None else frame
-                # cv2.namedWindow("DetectionManager Frame", cv2.WINDOW_NORMAL)
-                # cv2.imshow("DetectionManager Frame", merged_frame)
+                merged_frame = cv2.hconcat([inference_frame, frame]) if inference_frame is not None else frame
+                cv2.namedWindow("DetectionManager Frame", cv2.WINDOW_NORMAL)
+                cv2.imshow("DetectionManager Frame", merged_frame)
                 
-                # cv2.waitKey(0)
+                cv2.waitKey(1)
                 
             except Exception as e:
                 self.logger.error(f"Error in DetectionManager loop: {e}")

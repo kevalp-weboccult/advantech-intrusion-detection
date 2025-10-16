@@ -48,7 +48,7 @@ class ROIManager:
         try:
             for roi_object in self.all_roi_objects:
                 roi_object.denormalize_points(frame_width, frame_height)
-            self.logger.debug(f"Converted all ROIs to denormalized points based on frame size {frame_width}x{frame_height}.")
+            self.logger.info(f"Converted all ROIs to denormalized points based on frame size {frame_width}x{frame_height}.")
         except Exception as e:
             self.logger.error(f"Error converting ROIs to denormalized points for camera {self.camera_id}: {e}")
             self.logger.error(traceback.format_exc())

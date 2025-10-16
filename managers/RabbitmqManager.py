@@ -33,16 +33,17 @@ class RabbitmqManager:
             self.rabbitmq_host = self.config_manager.get("RABBITMQ_HOST", "localhost")
             self.rabbitmq_port = self.config_manager.get("RABBITMQ_PORT", 5672)
             self.BUID_ID = self.config_manager.get("BUILD_VERSION","v1")
-            self.rabbitmq_queue_name = self.config_manager.get("RABBITMQ_QUEUE","gotilo_queue")
-            self.rabbitmq_exchange = self.config_manager.get("RABBITMQ_EXCHANGE","gotilo_exchange")
-            self.rabbitmq_routing_key = self.config_manager.get("RABBITMQ_ROUTING_KEY","gotilo_routing_key")
+            self.rabbitmq_queue_name = self.config_manager.get("RABBITMQ_QUEUE","intrusion_event_logs")
+            self.rabbitmq_exchange = self.config_manager.get("RABBITMQ_EXCHANGE","intrusion_event_logs")
+            self.rabbitmq_routing_key = self.config_manager.get("RABBITMQ_ROUTING_KEY","intrusion_event_logs")
             self.is_running = True
             self.last_heartbeat_sent_time = None
             self.connected = False
             self.retry_count = 0
+            print(f"RabbitmqManager initialized with host: {self.rabbitmq_host}, port: {self.rabbitmq_port}, queue: {self.rabbitmq_queue_name}", flush=True)
             self.credentials = pika.PlainCredentials(self.rabbitmq_username,self.rabbitmq_password)
             self.parameters = pika.ConnectionParameters(
-                            host=self.rabbitmq_host,port=self.rabbitmq_port,virtual_host="/",credentials=self.credentials,heartbeat=60)
+                            host=self.rabbitmq_host,port=self.rabbitmq_port,virtual_host="/",credentials=self.credentials,heartbeat=0)
             self.reconnect()
             self.sender_thread = Thread(target=self.send_message,daemon=True)
 
@@ -117,9 +118,7 @@ class RabbitmqManager:
                         exchange=self.rabbitmq_exchange,
                         routing_key=self.rabbitmq_routing_key,
                         body=message,
-                        properties=pika.BasicProperties(
-                            delivery_mode=2,  # Make message persistent
-                        )
+                        properties=pika.BasicProperties(delivery_mode=1, content_type='text/plain')
                     
                     )
                     self.logger.info(f"published message")

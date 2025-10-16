@@ -23,6 +23,8 @@ from utils.file_utils import delete_files
 import logging
 from Modules.CustomLogger import CustomLogger
 from managers.ConfigManager import ConfigManager
+from dotenv import load_dotenv
+load_dotenv(override=True)
 
 class DeviceInfo:
     """Handles fetching device details like CPU, GPU, RAM, and Device Address."""
@@ -140,14 +142,14 @@ class ModelDownloader:
         self.detection_model_name = self.config_manager.get("DETECTION_MODEL_NAME","best4.onnx")
         self.encryption_manager = encryption_manager
         self.device_data = device_data
-        self.detection_model_path = self.config_manager.get("DETECTION_MODEL_PATH","best4.onnx")
+        self.detection_model_path = os.environ.get("DETECTION_MODEL_PATH") #self.config_manager.get("DETECTION_MODEL_PATH","best4.onnx")
         self.detection_model_path = os.path.join(self.model_folder,self.detection_model_path)
         self.required_paths: list[str] = [
             self.detection_model_path
         ]
         self.ENCRYPTED_MODELS_PATH = self.config_manager.get("ENCRYPTED_MODELS_PATH","_internal/cache/models")
         self.logger.info((f"Required paths: {self.required_paths}"))
-        self.token = self.config_manager.get("TOKEN","")
+        self.token = os.environ.get("TOKEN",self.config_manager.get("TOKEN",""))
         self.token_api_url = self.config_manager.get("TOKEN_API_URL","https://ams.weboccult.com/token/verify")
         self.get_device_data_api_url = self.config_manager.get("GET_DETVICE_DATA_API_URL","https://app.gotilo.ai")
 
@@ -162,10 +164,23 @@ class ModelDownloader:
         if not self._models_exist():
             print("Some required files are missing... Re-downloading models.")
             delete_files(self.required_paths)
-            # print("TOKEN",TOKEN)
-            data: Dict[str, str] = {"token": self.token, "device_details": json.dumps(self.device_data)}
-            response = requests.post(url=self.token_api_url, data=data)
-            response_data: Dict[str, Any] = response.json()
+            # Build payload as JSON and ensure device_details is an array as required by API
+            payload: Dict[str, Any] = {"token": self.token, "device_details": [self.device_data]}
+            print(payload)
+
+            self.logger.debug(
+                f"Preparing auth request. device_details count: {len(payload['device_details'])}"
+            )
+            response = requests.post(url=self.token_api_url, json=payload, timeout=20)
+            self.logger.info(f"Response Status Code: {response.status_code}")
+            try:
+                response_data: Dict[str, Any] = response.json()
+            except ValueError:
+                # Non-JSON response
+                self.logger.critical(
+                    f"Token API returned non-JSON response: {response.text[:500]}"
+                )
+                raise
 
             if response_data["code"] != 202:
                 print(f"ERROR: {response_data}")

@@ -11,6 +11,8 @@ from classes.Detector import Detector
 from objects.CameraObject import CameraObject
 from utils.encryption_utils import decrypt_models
 from typing import Dict,Any,Optional,List 
+from dotenv import load_dotenv
+load_dotenv(override=True)
 if TYPE_CHECKING:
     from multiprocessing import Queue
 class CameraManager:
@@ -29,7 +31,7 @@ class CameraManager:
             log_level=self.config_manager.get("LOG_LEVEL", 10),
             log_to_console=self.config_manager.get("LOG_TO_CONSOLE", True)
         )
-        self.detection_model_path = self.config_manager.get("DETECTION_MODEL_PATH", "models/yolov8n.pt")
+        self.detection_model_path = os.environ.get("DETECTION_MODEL_PATH",self.config_manager.get("DETECTION_MODEL_PATH","WOT03-det-640-20251013.bin"))
         self.encrpyted_models_path = self.config_manager.get("ENCRYPTED_MODELS_PATH","_internal/cache/models")
         self.detection_model_full_path = os.path.join(self.encrpyted_models_path,self.detection_model_path)
         self.detection_model_type = self.config_manager.get("DETECTION_MODEL_TYPE","onnx")

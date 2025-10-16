@@ -40,7 +40,7 @@ class DeviceManager:
         self.last_device_status_check_time: Optional[datetime] = None
         self.model_manager: Optional[ModelManager] = ModelManager()
 
-        self.RABBITMQ_WRITER_QUEUE_SIZE = self.config_manager.get("RABBITMQ_WRITER_QUEUE_SIZE",500)
+        self.RABBITMQ_WRITER_QUEUE_SIZE:int = self.config_manager.get("RABBITMQ_WRITER_QUEUE_SIZE",500)
         self.total_processes:List[mp.Process] = []
 
         # Shared state for inter-process communication
@@ -65,13 +65,13 @@ class DeviceManager:
         
 
         # Initialize camera managers
-        print("Initializing cameras...", flush=True)
-        self.initialize_and_start_camera_manager()
-        print("Cameras initialized.", flush=True)
+        # print("Initializing cameras...", flush=True)
+        # self.initialize_and_start_camera_manager()
+        # print("Cameras initialized.", flush=True)
 
-        self.last_device_details_update_time: datetime = None
+        self.last_device_details_update_time: Optional[datetime] = None
         self.device_update_interval: timedelta = timedelta(minutes=5)
-        self.rabbitmq_queue_name = self.config_manager.get("RABBITMQ_QUEUE", "intrusion_event_logs")
+        self.rabbitmq_queue_name:str = self.config_manager.get("RABBITMQ_QUEUE", "intrusion_event_logs")
         
     
 
@@ -79,7 +79,7 @@ class DeviceManager:
         try:
             while self.running:
                 try:
-                    current_time = datetime.now(timezone.utc)
+                    current_time:Optional[datetime] = datetime.now(timezone.utc)
                     if self.last_device_details_update_time is None or current_time - self.last_device_details_update_time >= self.device_update_interval:
                         device_id = self.device_id
                         self.device_name = self.device_data.get("device_name", "Unnamed Device") if self.device_data else "Unnamed Device"

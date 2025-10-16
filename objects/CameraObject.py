@@ -41,8 +41,9 @@ class CameraObject:
         self.roi_manager.initialize_rois()
         self.all_roi_objects=self.roi_manager.all_roi_objects
         self.streamer: Optional[Streamer] = Streamer(name=f"Streamer", camera_data=camera_details,all_roi_objects = self.all_roi_objects,rabbitmq_queue=self.rabbitmq_queue)
-        width = self.streamer.resize_width if self.streamer.is_resize else self.streamer.frame_width
-        height = self.streamer.resize_height if self.streamer.is_resize else self.streamer.frame_height
+        width = self.streamer.resize_width if self.streamer.is_resize else self.streamer.width
+        height = self.streamer.resize_height if self.streamer.is_resize else self.streamer.height
+        self.logger.info(f"CameraObject {self.camera_id} frame dimensions: width={width}, height={height}")
         
         self.roi_manager.convert_all_rois_denorm(frame_width=width,frame_height=height)
 

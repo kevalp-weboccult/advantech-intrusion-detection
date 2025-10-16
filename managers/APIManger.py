@@ -71,7 +71,7 @@ class ApiManager:
             cls._instance = super(ApiManager, cls).__new__(cls)
         return cls._instance
 
-    def __init__(self, device_id: str) -> None:
+    def __init__(self, token: str) -> None:
         """
         Initialize the ApiManager with device ID and default settings.
 
@@ -112,7 +112,9 @@ class ApiManager:
 
         # Initialize data storage attributes
         self.settings: Dict[str, Any] = {}
-        self.device_id: ObjectId = ObjectId(device_id)
+        self.token = token 
+
+        
         self.camera_details: Optional[Dict[str, Any]] = None
         self.last_camera_update_time: Optional[datetime] = None
         self.check_camera_interval: timedelta = timedelta(minutes=5)
@@ -127,6 +129,10 @@ class ApiManager:
         self.camera_details_json_file_name: str = self.config_manager.defaults.get(
             "CAMERA_DETAILS_JSON_FILE_NAME", "camera_details.json"
         )
+        self.get_device_data_api_url = self.config_manager.get("GET_DETVICE_DATA_API_URL")
+        
+        self.device_id = self.get_device_id_from_token()
+
 
         # Initialize device settings attributes with proper types
         self.vehicle_detection_img_size: Optional[str] = None
@@ -145,8 +151,41 @@ class ApiManager:
         self.check_updated_device_settings()
 
         self.logger.info(
-            f"ApiManager initialized for device {device_id} with URL: {self.url}"
+            f"ApiManager initialized for device {self.device_id} with URL: {self.url}"
         )
+
+    def get_device_id_from_token(self):
+        try:
+            
+            end_point:str = "api/v1/tokens/get-device-data"
+            headers: Dict[str, str] = {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+            data_payload: Dict[str, str] = {
+                'token': self.token
+            }
+            response: requests.Response = requests.post(
+                f"{self.get_device_data_api_url}/{end_point}",
+                headers=headers,
+                data=data_payload,
+                timeout=30
+            )
+            if response.status_code == 202:
+                # print(response.json())
+                response_data = response.json()
+                token_data = response_data.get("token")
+                device_id = token_data.get("device_id")
+                if device_id:
+                    self.logger.info(f"Device ID retrieved from token: {device_id}")
+                    return device_id
+                else:
+                    return None
+
+
+        
+        except Exception as e:
+            self.logger.error(f"Error in get_device_id_from_token: {e} {traceback.format_exc()}")
+            return None
 
     def check_updated_device_settings(self) -> None:
         """
@@ -298,7 +337,7 @@ class ApiManager:
             return value.lower() in ('true', '1', 'yes', 'on')
         return False
 
-    def get_all_camera_details(self, device_id: str) -> Optional[Dict[str, Any]]:
+    def get_all_camera_details(self) -> Optional[Dict[str, Any]]:
         """
         Fetch camera details for all cameras associated with a device.
 
@@ -340,7 +379,7 @@ class ApiManager:
         try:
             # Ensure device_id is string format
             normalized_device_id: str = (
-                str(device_id) if not isinstance(device_id, str) else device_id
+                str(self.device_id) if not isinstance(self.device_id, str) else self.device_id
             )
 
             headers: Dict[str, str] = {
@@ -407,7 +446,7 @@ class ApiManager:
 
         except requests.RequestException as req_err:
             self.logger.error(
-                f"Request error in get_all_camera_details for device {device_id}: "
+                f"Request error in get_all_camera_details for device {self.device_id}: "
                 f"{req_err} {traceback.format_exc()}"
             )
         except json.JSONDecodeError as json_err:
