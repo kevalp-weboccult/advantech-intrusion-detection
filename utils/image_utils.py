@@ -62,9 +62,11 @@ def preprocess_frame(
             )
 
     # Apply resizing if requested
-    if resize:
-        processed_frame = cv2.resize(processed_frame, (width, height))
-
+    try:
+        if resize:
+            processed_frame = cv2.resize(processed_frame, (width, height))
+    except Exception as exec:
+        processed_frame = frame
     return processed_frame
 
 def get_black_out_frame(frame,area_check_roi):

@@ -166,7 +166,6 @@ class ModelDownloader:
             delete_files(self.required_paths)
             # Build payload as JSON and ensure device_details is an array as required by API
             payload: Dict[str, Any] = {"token": self.token, "device_details": [self.device_data]}
-            print(payload)
 
             self.logger.debug(
                 f"Preparing auth request. device_details count: {len(payload['device_details'])}"
@@ -183,7 +182,7 @@ class ModelDownloader:
                 raise
 
             if response_data["code"] != 202:
-                print(f"ERROR: {response_data}")
+                self.logger.info(f"ERROR: {response_data}")
                 self.logger.critical(f"Error fetching data: {response_data}")
                 exit(0)
 

@@ -40,7 +40,6 @@ class RabbitmqManager:
             self.last_heartbeat_sent_time = None
             self.connected = False
             self.retry_count = 0
-            print(f"RabbitmqManager initialized with host: {self.rabbitmq_host}, port: {self.rabbitmq_port}, queue: {self.rabbitmq_queue_name}", flush=True)
             self.credentials = pika.PlainCredentials(self.rabbitmq_username,self.rabbitmq_password)
             self.parameters = pika.ConnectionParameters(
                             host=self.rabbitmq_host,port=self.rabbitmq_port,virtual_host="/",credentials=self.credentials,heartbeat=0)

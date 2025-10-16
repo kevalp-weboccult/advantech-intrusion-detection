@@ -198,7 +198,6 @@ class ONNXDetector:
         class_ids = class_ids[conf_mask]
 
         if outputs.shape[0] == 0:
-            print("output shape is zero ")
             return np.empty((0, 4)), np.empty((0,)), np.empty((0,), dtype=int)
 
         # Convert class names to IDs only once
@@ -211,9 +210,7 @@ class ONNXDetector:
             if self.classes[cls] in self.catrogry_to_detect:
                 index_to_consider.append(idx)
             
-        print(index_to_consider)
         index_to_consider = np.array(index_to_consider)
-        print(index_to_consider)
         # exit()
 
 
@@ -228,7 +225,6 @@ class ONNXDetector:
         class_ids = class_ids[index_to_consider]
 
         if outputs.shape[0] == 0:
-            print("no allowed class detected")
             return np.empty((0, 4)), np.empty((0,)), np.empty((0,), dtype=int)
 
         # Convert center x, y, width, height to x1, y1, x2, y2
@@ -248,7 +244,6 @@ class ONNXDetector:
         s_time = time.time()
         indices = multiclass_nms(boxes, max_scores, class_ids, iou_threshold=self.iou_thres)
         e_time = time.time()
-        print("Time taken in NMS:", e_time - s_time)
 
         # Final selection
         boxes = boxes[indices]
@@ -331,7 +326,6 @@ class ONNXDetector:
         s_time = time.time()
         indices = multiclass_nms(boxes,scores,class_ids,iou_threshold=self.iou_thres)
         e_time = time.time()
-        print(f"Time taken in NMS",e_time-s_time)
         #select the indices values from the boxes, scores and class_ids
         boxes = boxes[indices]
         scores = scores[indices]
@@ -365,19 +359,16 @@ class ONNXDetector:
             s_time = time.time_ns()
             input_data, pad = self.preprocess(image,self.input_width)
             e_time = time.time_ns()
-            print(f"Preprocess time: {(e_time - s_time)/1e6} ms",flush=True)
 
             # Run the model inference
             s_time = time.time_ns()
             output = self.session.run(None, {self.input_name: input_data})
             e_time = time.time_ns()
-            print(f"Inference time: {(e_time - s_time)/1e6} ms",flush=True)
 
             # Post-process the model output to extract and visualize detections
             s_time = time.time_ns()
             boxes, scores, class_ids = self.postprocess(image, output, pad)
             e_time = time.time_ns()
-            print(f"Postprocess time: {(e_time - s_time)/1e6} ms",flush=True)
 
             return boxes, scores, class_ids
         except Exception as e:

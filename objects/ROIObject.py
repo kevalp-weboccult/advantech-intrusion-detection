@@ -33,10 +33,9 @@ class ROIObject:
         """
         Convert normalized points to absolute pixel coordinates based on frame dimensions.
         """
-        print(f"Denormalizing points for ROI {self.roi_id=}: {self.norm_points=}, frame_width={frame_width}, frame_height={frame_height}")
+        print(f"Denormalizing points for ROI '{self.name}' with frame size ({frame_width}, {frame_height})")
         self.denorm_points = [(int(x * frame_width), int(y * frame_height)) for x, y in self.norm_points]
         self.denorm_poly_points = Polygon(self.denorm_points)
-        # print(f"Denormalized points for ROI {self.roi_id=}: {self.denorm_points=}")
         return self.denorm_points
 
     def update_roi(self,roi_data:dict):

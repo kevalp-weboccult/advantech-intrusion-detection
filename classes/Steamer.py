@@ -78,8 +78,13 @@ class Streamer:
 
 
 
-        
-
+        if self.width is None or self.height is None:
+            frame = self._read_frame()
+            if frame is not None:
+                self.height, self.width = frame.shape[:2]
+            else:
+                self.width = self.resolution_x
+                self.height = self.resolution_y
         
 
         self.ret_false_count: int = 0
@@ -117,6 +122,7 @@ class Streamer:
         
         self.ret_false_count = 0
         current_time = datetime.now(timezone.utc)
+        self.frame_count += 1
         if self.last_updated_time is None or current_time - self.last_updated_time > self.camera_heartbeat_timeout:
             message = {
                 "site_id": self.site_id,

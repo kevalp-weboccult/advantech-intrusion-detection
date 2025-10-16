@@ -65,9 +65,7 @@ class DeviceManager:
         
 
         # Initialize camera managers
-        # print("Initializing cameras...", flush=True)
-        # self.initialize_and_start_camera_manager()
-        # print("Cameras initialized.", flush=True)
+        self.initialize_and_start_camera_manager()
 
         self.last_device_details_update_time: Optional[datetime] = None
         self.device_update_interval: timedelta = timedelta(minutes=5)
@@ -140,7 +138,7 @@ class DeviceManager:
         try:
             self.device_status_update_thread.start()
             for group_id, process in self.processes.items():
-                print(f"Starting process for group {group_id}...", flush=True)
+                self.logger.info(f"Starting process for group {group_id}...")
                 process.start()
                 self.total_processes.append(process)
                 self.logger.info(f"Camera group {group_id} started.")
@@ -148,7 +146,7 @@ class DeviceManager:
             self.total_processes.append(self.rmq_process)
             
             # Start device update process
-            print("Starting device update process...", flush=True)
+            self.logger.info("Starting device update process...")
             
             try:
                 for p in self.total_processes:
@@ -202,12 +200,12 @@ def start_camera_manager_process(camera_group_id: str, cameras: List[dict], devi
 
 def start_rabbitmq_manager_process(rabbitmq_queue,shared_camera_dict,shared_device_dict,logger):
         try:
-            print(f"Starting RabbitMQManager for group", flush=True)
+            logger.info(f"Starting RabbitMQManager for group", flush=True)
             rabbitmq_manager = RabbitmqManager(rabbitmq_queue,shared_camera_dict,shared_device_dict)
             rabbitmq_manager.start()
-            print(f"RabbitMQManager started", flush=True)
+            logger.info(f"RabbitMQManager started", flush=True)
             logger.info(f"RabbitMQManager started")
             
         except Exception as e:
-            print(f"Error in RabbitMQ Manager process : {e} {traceback.format_exc()}")
+            logger.error(f"Error in RabbitMQ Manager process : {e} {traceback.format_exc()}")
 

@@ -41,7 +41,6 @@ def get_input(prompt: str, timeout: int = 10) -> Optional[str]:
         ...     print("No input received within timeout.")
     """
     # Display the prompt message to the user
-    print(prompt)
 
     # Create a selector object to monitor standard input (stdin)
     selector = selectors.DefaultSelector()

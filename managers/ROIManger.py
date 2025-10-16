@@ -35,10 +35,10 @@ class ROIManager:
                     roi_id=roi.get("id", "unknown_roi"),
                     name=roi.get("roi_name", "Unnamed ROI"),
                     points=roi.get("points", []),
-                    roi_type=roi.get("type", "area_roi")
+                    roi_type=roi.get("roi_name", "area_roi")
                 )
                 self.all_roi_objects.append(roi_object)
-            self.logger.info(f"Initialized {len(self.all_roi_objects)} ROIs for camera {self.camera_name=}.")
+            self.logger.info(f"Initialized {len(self.all_roi_objects)} ROIs for camera {self.camera_name}.")
         
         except Exception as e:
             self.logger.error(f"Error initializing ROIs for camera {self.camera_id}: {e}")
