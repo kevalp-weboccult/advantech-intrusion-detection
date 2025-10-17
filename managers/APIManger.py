@@ -106,8 +106,8 @@ class ApiManager:
         # Setup logging with proper configuration
         self.logger: Logger = CustomLogger("ApiManager").get_logger(
             log_file="logs/api_manager.log",
-            log_level=10,
-            log_to_console=True
+            log_level=self.config_manager.get("LOG_LEVEL", 10),
+            log_to_console=self.config_manager.get("LOG_TO_CONSOLE", True)
         )
 
         # Initialize data storage attributes

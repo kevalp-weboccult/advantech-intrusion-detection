@@ -172,6 +172,12 @@ class ModelDownloader:
             )
             response = requests.post(url=self.token_api_url, json=payload, timeout=20)
             self.logger.info(f"Response Status Code: {response.status_code}")
+            status_code: int = response.status_code
+            if status_code != 202:
+                self.logger.critical(
+                    f"Token API returned non-200 status code: {status_code}, Response: {response.text[:500]}"
+                )
+                exit(0)
             try:
                 response_data: Dict[str, Any] = response.json()
             except ValueError:
@@ -179,7 +185,7 @@ class ModelDownloader:
                 self.logger.critical(
                     f"Token API returned non-JSON response: {response.text[:500]}"
                 )
-                raise
+                
 
             if response_data["code"] != 202:
                 self.logger.info(f"ERROR: {response_data}")
@@ -250,8 +256,8 @@ class ModelManager:
         # self.logger = 
         self.logger: logging.Logger = CustomLogger("ModelManager").get_logger(
             log_file="logs/model_manager.log",
-            log_to_console=self.config_manager.get("log_to_console", True),
-            log_level=self.config_manager.get("log_level", logging.INFO),
+            log_to_console=self.config_manager.get("LOG_TO_CONSOLE", True),
+            log_level=self.config_manager.get("LOG_LEVEL", logging.INFO),
         )
         self.logger.info("Initializing ModelManager...")
         try:

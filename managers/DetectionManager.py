@@ -63,7 +63,6 @@ class DetectionManager:
                 # Process each ROI
                 for roi_object in self.roi_objects:
                     roi_object.current_insider_bboxes = []
-                    print(roi_object.roi_type)
                     roi_type = "normal_roi" if roi_object.roi_type == "normal_roi" else "critical_roi"
                     # Draw ROI polygons
                     color_roi = (255, 0, 0) if roi_type == "normal_roi" else (0, 0, 255)  # Blue for normal, Red for critical
@@ -77,15 +76,18 @@ class DetectionManager:
                         center_x = (x1 + x2) / 2
                         center_y = (y1 + y2) / 2
                         point = Point(center_x, center_y)
-
+                        print(f"Processing bbox: {bbox} with center point: ({center_x}, {center_y})")
                         # Check if detection is inside ROI
                         if roi_object.denorm_poly_points.is_valid and roi_object.denorm_poly_points.contains(point):
                             roi_object.current_insider_bboxes.append(bbox)
-                            bbox_color = (255, 0, 0) if roi_type == "normal" else (0, 0, 255)  # Blue if normal, Red if critical
+                            print(f"Detection inside ROI '{roi_type}': {bbox}")
+                            bbox_color = (255, 0, 0) if roi_type == "normal_roi" else (0, 0, 255)  # Blue if normal, Red if critical
                         else:
+                            print(f"Detection outside ROI '{roi_type}': {bbox}")
                             bbox_color = (0, 255, 0)  # Green if outside ROI
 
                         # Draw bbox and center point
+                        print(f"Drawing bbox: {bbox} with color: {bbox_color}")
                         cv2.rectangle(frame, (x1, y1), (x2, y2), bbox_color, 2)
                         cv2.circle(frame, (int(center_x), int(center_y)), 5, bbox_color, -1)
 
@@ -93,6 +95,7 @@ class DetectionManager:
 
                     # Handle alerts based on buffer/time
                     if len(roi_object.current_insider_bboxes) > 0:
+                        self.logger.info(f"Intrusion detected in ROI '{roi_object.name}'.")
                         current_time = datetime.now(timezone.utc)
                         time_buffer_limit = self.intrusion_normal_time_buffer if roi_object.roi_type == "normal" else self.intrusion_critical_time_buffer
                         if roi_object.last_alert_sent_time is None or (current_time - roi_object.last_alert_sent_time) >= time_buffer_limit:
@@ -119,14 +122,17 @@ class DetectionManager:
                                     "message": message
                                 }
                                 self.rabbitmq_queue.put(event_data)
+                                
+                                self.logger.info(f"Sending intrusion alert: {event_data['message_type']}")
+
                     else:
                         roi_object.interusion_detection_count = 0
 
                 e_time = time.time()
                 merged_frame = cv2.hconcat([inference_frame, frame]) if inference_frame is not None else frame
                 cv2.namedWindow("DetectionManager Frame", cv2.WINDOW_NORMAL)
-                cv2.imshow("DetectionManager Frame", merged_frame)
-                cv2.waitKey(1)
+                cv2.imshow("DetectionManager Frame", frame)
+                cv2.waitKey(0)
 
             except Exception as e:
                 self.logger.error(f"Error in DetectionManager loop: {e}")
